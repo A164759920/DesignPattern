@@ -4,7 +4,7 @@
 
 - 使得 callback 的方式更加灵活,只需固定第一个 key,其余参数个数**可以不受限制**
 
-## Array.prototype.shift.call(arguments);\*\*
+## Array.prototype.shift.call(arguments);
 
 - 取出 arguments 类数组的第一个元素,且改变原 arguments
   - shift 取出数组头元素
