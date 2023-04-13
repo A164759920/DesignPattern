@@ -10,7 +10,9 @@
     <div id="app">
       <span>UP:{{name}}</span>
       <input type="text" v-model="name" />
-      <span>TEXT:{{more.like}}</span>
+      <span>yiled1:{{more.yield1}}</span>
+      <br />
+      <span>yield2:{{more.yield2}}</span>
     </div>
 
     <script src="./vue.js"></script>
@@ -20,7 +22,8 @@
         data: {
           name: "用户名",
           more: {
-            like: "like数据",
+            yield1: "一号数据",
+            yield2: "二号数据",
           },
         },
       });
