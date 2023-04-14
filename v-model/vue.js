@@ -22,6 +22,7 @@ function Observer(data_instance) {
   // 递归为空或子属性非object
   if (!data_instance || typeof data_instance !== "object") return;
   const dependency = new Dependency(data_instance);
+  console.log(dependency);
   Object.keys(data_instance).forEach((key) => {
     let value = data_instance[key]; // 闭包 存储$data中的原始值
     Observer(value); // 递归监听对象的子属性
@@ -29,16 +30,13 @@ function Observer(data_instance) {
       enumerable: true,
       configurable: true,
       get() {
-        console.log(`【getter】访问了${key}-${value}`);
-        // if (Dependency.temp) {
-        //   console.log("【getter】", Dependency.temp);
-        // }
+        // console.log(`【getter】访问了${key}-${value}`);
         // FIXME:将Watcher添加到实例dependency的list中
         Dependency.temp && dependency.addSub(Dependency.temp);
         return value;
       },
       set(newValue) {
-        console.log(`【setter】修改了属性值:旧=${value}-新=${newValue}`);
+        // console.log(`【setter】修改了属性值:旧=${value}-新=${newValue}`);
         value = newValue;
         // 若修改的newValue为对象，则也需要进行数据劫持
         Observer(newValue);
@@ -69,16 +67,37 @@ function Compile(element, vm) {
         const arr = result_regex[1].split(".");
         // 此处若存在对象嵌套，需要链式获取$data中的值
         const value = arr.reduce((prev, cur) => prev[cur], vm.$data);
-        console.log("frag_compile");
         // 使用replace方法进行替换 => 先匹配到{{}}中的内容,再替换为data对象中映射的内容
         // {{name}} => 用户名 FIXME:一次替换后{{}}就被覆盖了，需要在外单独保存
         node.nodeValue = rawNodeValue.replace(pattern, value);
         new Watcher(vm, result_regex[1], (newValue) => {
-          console.log("节点", node);
           node.nodeValue = rawNodeValue.replace(pattern, newValue);
         });
       }
       return;
+    }
+    if (node.nodeType === 1 && node.nodeName === "INPUT") {
+      const attr = Array.from(node.attributes);
+      attr.forEach((i) => {
+        if (i.nodeName === "v-model") {
+          // nodeValue中即为要替换的属性名
+          // ########### 该部分实现数据到视图的变化 ###########
+          const value = i.nodeValue
+            .split(".")
+            .reduce((prev, cur) => prev[cur], vm.$data);
+          node.value = value;
+          new Watcher(vm, i.nodeValue, (newValue) => {
+            node.value = newValue;
+          });
+          // ########### 该部分实现输入框到数据的变化 ###########
+          node.addEventListener("input", (e) => {
+            const arr1 = i.nodeValue.split(".");
+            const arr2 = arr1.slice(0, arr1.length - 1);
+            const final = arr2.reduce((prev, cur) => prev[cur], vm.$data);
+            final[arr1[arr1.length - 1]] = e.target.value;
+          });
+        }
+      });
     }
     // 递归处理
     node.childNodes.forEach((child) => {
@@ -104,8 +123,6 @@ class Dependency {
     });
   }
 }
-
-// 每一个{{}}中的值应该是一个订阅者，当发布者发布值变化时，每个订阅者自己更新{{}}
 
 // vm.$data.key => {{key}}
 class Watcher {
